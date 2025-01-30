@@ -2,7 +2,7 @@
 
 - golang (gofiber)
 - gorm as orm
-- nodemon live code
+- goair live code
 - docker management
 - supabase
 - workflow CI/CD github action

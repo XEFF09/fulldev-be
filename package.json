@@ -3,6 +3,6 @@
     "nodemon": "^3.1.9"
   },
   "scripts": {
-    "go": "nodemon --exec go run main.go --signal SIGTERM"
+    "go": "nodemon --exec go run . --signal SIGTERM"
   }
 }
