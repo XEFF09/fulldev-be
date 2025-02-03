@@ -25,7 +25,7 @@ type Book struct {
 // @Router /books [get]
 func GetBooks(db *gorm.DB) ([]Book, error) {
 	books := []Book{}
-	result := db.Find(&books)
+	result := db.Preload("Authors").Preload("Publisher").Find(&books)
 
 	if result.Error != nil {
 		return nil, result.Error	
@@ -35,7 +35,7 @@ func GetBooks(db *gorm.DB) ([]Book, error) {
 
 func GetBook(db *gorm.DB, id uint) (*Book, error) {
 	book := Book{}
-	result := db.First(&book, id)
+	result := db.Preload("Authors").Preload("Publisher").First(&book, id)
 
 	if result.Error != nil {
 		return nil, result.Error
