@@ -230,7 +230,6 @@ func main() {
 		})
 	})
 	app.Post("/upload", uploadFile)
-	app.Get("/env", getEnv)
 
 	app.Listen(":8088")
 }
@@ -249,16 +248,4 @@ func uploadFile(c *fiber.Ctx) error {
 	}
 
 	return c.SendString("File uploaded")
-}
-
-func getEnv(c *fiber.Ctx) error {
-
-	secret := os.Getenv("SECRET")
-	if secret == "" {
-		secret = "default-secret"
-	}
-
-	return c.JSON(fiber.Map{
-		"env": secret,
-	})
 }
