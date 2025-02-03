@@ -19,6 +19,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
+
+	"github.com/XEFF09/fulldev-be/models"
 )
 
 const (
@@ -28,11 +30,6 @@ const (
 	password = "mypassword"
 	dbname 	 = "fulldev-postgres-db"
 )
-
-var memberUser = User{
-	Email: "user@gmail.com",
-	Password: "password",
-}
 
 func checkMiddleware(c *fiber.Ctx) error {
 
@@ -95,7 +92,7 @@ func main() {
 	}
 	fmt.Println("Database connected!")
 
-	err = db.AutoMigrate(&Book{}, &User{})
+	err = db.AutoMigrate(&models.Book{}, &models.User{}, &models.Publisher{}, &models.Author{}, &models.AuthorBook{})
 	if err != nil {
 		panic("Failed to migrate database!")
 	}
@@ -114,25 +111,25 @@ func main() {
 	}))
 
 	app.Post("/register", func (c *fiber.Ctx) error {
-		user := User{}
+		user := models.User{}
 		if err := c.BodyParser(&user); err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
-		err = createUser(db, &user)
+		err = models.CreateUser(db, &user)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 		return c.JSON(user)
 	})
 	app.Post("/login", func (c *fiber.Ctx) error {
-		req := User{}
+		req := models.User{}
 		err := c.BodyParser(&req)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
-		token, err := loginUser(db, &req)
+		token, err := models.LoginUser(db, &req)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).SendString(err.Error())
 		}
@@ -160,7 +157,7 @@ func main() {
 	})
 
 	app.Get("/books", func (c *fiber.Ctx) error {
-		books, err := getBooks(db)
+		books, err := models.GetBooks(db)
 		if err != nil {
 			return c.Status(fiber.StatusNotFound).SendString(err.Error())
 		}
@@ -171,20 +168,20 @@ func main() {
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
-		book, err := getBook(db, uint(id))
+		book, err := models.GetBook(db, uint(id))
 		if err != nil {
 			return c.Status(fiber.StatusNotFound).SendString(err.Error())
 		}
 		return c.JSON(book)
 	})
 	app.Post("/books", func (c *fiber.Ctx) error {
-		book := Book{}
+		book := models.Book{}
 		err := c.BodyParser(&book)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
-		err = createBook(db, &book)
+		err = models.CreateBook(db, &book)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
@@ -195,13 +192,13 @@ func main() {
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
-		req := Book{}
+		req := models.Book{}
 		err = c.BodyParser(&req)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
-		book, err := getBook(db, uint(id))
+		book, err := models.GetBook(db, uint(id))
 		if err != nil {
 			return c.Status(fiber.StatusNotFound).SendString(err.Error())
 		}
@@ -209,7 +206,7 @@ func main() {
 		book.Title = req.Title
 		book.Author = req.Author
 
-		err = updateBook(db, book)
+		err = models.UpdateBook(db, book)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
@@ -221,7 +218,7 @@ func main() {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
-		err = deleteBook(db, uint(id))
+		err = models.DeleteBook(db, uint(id))
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
@@ -229,6 +226,31 @@ func main() {
 			"message": "Deleted Successful!",
 		})
 	})
+
+	app.Post("/publishers", func (c *fiber.Ctx) error {
+		publisher := models.Publisher{}	
+		_ = c.BodyParser(&publisher)
+		_ = models.CreatePublisher(db, &publisher)
+		return c.JSON(publisher)
+	})
+
+	app.Post("/authors/:bookId", func (c *fiber.Ctx) error {
+		bookId, err := strconv.Atoi(c.Params("bookId"))
+		if err != nil {
+			return fiber.ErrBadRequest
+		}
+
+		book, err := models.GetBook(db, uint(bookId))
+		if err != nil {
+			return fiber.ErrBadRequest
+		}
+
+		author := models.Author{}
+		_ = c.BodyParser(&author)
+		_ = models.CreateAuthor(db, &author, book)
+		return c.JSON(author)
+	})
+
 	app.Post("/upload", uploadFile)
 
 	app.Listen(":8088")
